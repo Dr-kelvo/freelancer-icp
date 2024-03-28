@@ -1,48 +1,70 @@
-# Social-Fi
+# Decentralized Freelancer
 
-The provided code is an implementation of a backend system for managing service and users, including features for adding, updating, and retrieving service and user information. It also includes functionality for subscription processing and verification. Here's a breakdown of the main components and functionalities:
+This canister implements a marketplace for freelance services. Clients can list services, freelancers can bid on those services, and clients can select a freelancer to complete the work.
 
-## Overview
+**Data Structures**
 
-### Libraries and Imports
+The canister uses several Azle data structures to store information:
 
-- The code imports various modules from the "azle" package, which likely provides utility functions and data structures for building internet computer (IC) canisters.
-- It also imports functionalities related to the Ledger canister for handling subscription transactions.
+* `StableBTreeMap`: This is a self-balancing tree used to store services by client ID, user information, bids, and client information.
+* `Vec`: This is a vector data structure used to store lists of service IDs, user IDs, and bid IDs within the corresponding data structures.
+* `Option`: This is used to represent optional values, which can be either `Some(value)` or `None`.
 
-### Data Structures and Types
+**Canister Functions**
 
-- **Service**: Represents service that can be listed on a service manager. It includes properties such as ID, title, description, client, available units, subscription fee, etc.
-- **User**: Represents an user with properties like ID, username, email, expertise, bio, profile picture, followers, and services.
-- **SubscriptionStatus**: Defines the status of a subscription transaction, such as pending or completed.
-- **ReserveSubscription**: Represents a subscription reservation with details like price, status, seller, paid timestamp, and memo.
-- **ErrorType**: Defines different error types for error handling.
+The canister provides a variety of functions for managing services, users, bids, and subscriptions:
 
-### Storage
+**Services**
 
-- The system uses `StableBTreeMap` for storing service, users, pending subscriptions, and persisted subscriptions. This provides a durable data storage solution across canister upgrades.
-- Separate maps are used for different types of data to ensure data isolation and efficient retrieval.
+* `addService`: Adds a new service for the current user.
+* `getServices`: Retrieves all services listed on the marketplace.
+* `getService`: Retrieves a specific service by its ID.
+* `updateService`: Updates an existing service.
+* `servicestatus`: Updates the status of a service.
 
-### Functions
+**Bids**
 
-- **addService**: Adds a new service item to the system. It generates a unique ID using UUID v4 and associates the service with the caller (client).
-- **getServices**: Retrieves all service items stored in the system.
-- **getService**: Retrieves a specific service item by its ID.
-- **updateService**: Updates the details of an existing service item.
-- **addUser**: Adds a new user to the system with associated details.
-- **getUsers**: Retrieves all users along with their associated service.
-- **getUser**: Retrieves a specific user by their ID.
-- **updateUser**: Updates the details of an existing user.
-- **createSubscriptionPay**: Initiates a subscription reservation for a service item. It reduces the available units of the service and adds the reserved subscription to the pending subscriptions map.
-- **completeSubscription**: Completes a subscription transaction by verifying the subscription details and updating the subscription status. It also persists the subscription details for future reference.
-- **verifySubscription**: Verifies a subscription transaction by checking the transaction details against the provided parameters.
-- **getAddressFromPrincipal**: Retrieves the address from the principal for use in subscription transactions.
+* `addBid`: Allows a user to submit a bid on a service.
+* `getBids`: Retrieves all bids on the marketplace.
+* `getServiceBids`: Retrieves all bids for a specific service.
+* `getBid`: Retrieves a specific bid by its ID.
+* `selectBid`: Assigns a selected bid to a service, marking it complete.
 
-### Helper Functions
+**Users**
 
-- **hash**: Generates a hash value for input data, used for generating correlation IDs for services.
-- **generateCorrelationId**: Generates a correlation ID for service based on service ID, caller principal, and current timestamp.
-- **discardByTimeout**: Discards a subscription reservation after a specified timeout period.
-- **verifySubscriptionInternal**: Internally verifies a subscription transaction by fetching block data and checking transaction details.
+* `addUser`: Adds a new user to the marketplace.
+* `getUsers`: Retrieves all users registered on the marketplace.
+* `getUser`: Retrieves a specific user by their ID.
+* `getUserByClient`: Retrieves the user information for the currently logged-in client.
+* `getUserServices`: Retrieves all services associated with a specific user.
+* `updateUser`: Updates an existing user's information.
+
+**Clients**
+
+* `getClient`: Retrieves the client information for the currently logged-in client.
+
+**Following Users**
+
+* `getFollowingUsers`: Retrieves a list of users that the current client is following.
+* `getFollowingServices`: Retrieves a list of services from users that the current client is following.
+
+**Subscriptions**
+
+* `createSubscriptionPay`: Reserves a service by paying for it.
+* `completeSubscription`: Completes a subscription by verifying payment.
+* `verifySubscription`: Verifies a subscription payment.
+
+**Helper Functions**
+
+* `getAddressFromPrincipal`: Retrieves the address associated with a principal.
+
+**Additional Notes**
+
+* The code utilizes the `ic` object to interact with the Dfinity network, including calling other canisters and managing timers.
+* The code implements a mechanism to discard pending subscriptions after a certain timeout period.
+* The `uuid` package is used to generate unique IDs for services, users, and bids.
+
+I hope this readme provides a comprehensive overview of the freelance marketplace canister!
 
 ## Things to be explained in the course
 
@@ -88,10 +110,10 @@ Transfer ICP:
 `dfx ledger transfer <ADDRESS>  --memo 0 --icp 100 --fee 0`
 where:
 
-- `--memo` is some correlation id that can be set to identify some particular transactions (we use that in the eventManager canister).
-- `--icp` is the transfer amount
-- `--fee` is the transaction fee. In this case it's 0 because we make this transfer as the minter idenity thus this transaction is of type MINT, not TRANSFER.
-- `<ADDRESS>` is the address of the recipient. To get the address from the principal, you can get it directly from the wallet icon top right or use the helper function from the eventManager canister - `getAddressFromPrincipal(principal: Principal)`, it can be called via the Candid UI.
+* `--memo` is some correlation id that can be set to identify some particular transactions (we use that in the eventManager canister).
+* `--icp` is the transfer amount
+* `--fee` is the transaction fee. In this case it's 0 because we make this transfer as the minter idenity thus this transaction is of type MINT, not TRANSFER.
+* `<ADDRESS>` is the address of the recipient. To get the address from the principal, you can get it directly from the wallet icon top right or use the helper function from the eventManager canister - `getAddressFromPrincipal(principal: Principal)`, it can be called via the Candid UI.
 
 ### Internet identity canister
 
