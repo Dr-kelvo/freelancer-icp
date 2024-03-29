@@ -9,26 +9,19 @@ const AddUser = ({ save }) => {
   const [imageUrl, setImageUrl] = useState("");
   const [expertise, setExpertise] = useState("");
   const [portfolios, setPortfolios] = useState([]);
+  const [skills, setSkills] = useState([]);
 
   const isFormFilled = () =>
     userName && expertise && email && bio && imageUrl && portfolios;
 
-  const [show, setShow] = useState(false);
-
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
-
   return (
     <>
-      <Button onClick={handleShow} className="btn btn-success-outline">
-        <i className="bi bi-plus "></i> New User
-      </Button>
-      <Modal show={show} onHide={handleClose} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>New User</Modal.Title>
-        </Modal.Header>
-        <Form>
-          <Modal.Body>
+      <div className="d-flex flex-column align-items-center mb-4 w-50">
+        <h2>
+          <Modal.Title>Create User Profile</Modal.Title>
+        </h2>
+        <Form className="w-75 p-3">
+          <Modal.Body className="w-100">
             <FloatingLabel
               controlId="inputName"
               label="User userName"
@@ -92,6 +85,19 @@ const AddUser = ({ save }) => {
               />
             </FloatingLabel>
             <FloatingLabel
+              controlId="inputSkills"
+              label="Skills"
+              className="mb-3"
+            >
+              <Form.Control
+                type="text"
+                placeholder="comma separated skills"
+                onChange={(e) => {
+                  setSkills(e.target.value.split(","));
+                }}
+              />
+            </FloatingLabel>
+            <FloatingLabel
               controlId="inputPortfolios"
               label="Portfolios"
               className="mb-3"
@@ -106,10 +112,7 @@ const AddUser = ({ save }) => {
             </FloatingLabel>
           </Modal.Body>
         </Form>
-        <Modal.Footer>
-          <Button variant="outline-secondary" onClick={handleClose}>
-            Close
-          </Button>
+        <Modal.Footer className="align-self-end mr-4">
           <Button
             variant="dark"
             disabled={!isFormFilled()}
@@ -120,15 +123,15 @@ const AddUser = ({ save }) => {
                 imageUrl,
                 userName,
                 expertise,
+                skills,
                 portfolios,
               });
-              handleClose();
             }}
           >
             Save user
           </Button>
         </Modal.Footer>
-      </Modal>
+      </div>
     </>
   );
 };

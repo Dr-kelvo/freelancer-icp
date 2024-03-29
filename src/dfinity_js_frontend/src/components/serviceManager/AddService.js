@@ -8,10 +8,8 @@ const AddService = ({ save }) => {
   const [description, setDescription] = useState("");
   const [terms, setTerms] = useState("");
   const [category, setCategory] = useState("");
-  const [tags, setTags] = useState([]);
-  const [cost, setCost] = useState(0);
   const isFormFilled = () =>
-    title && deadline && terms && category && description && cost && tags;
+    title && deadline && terms && category && description;
 
   const [show, setShow] = useState(false);
 
@@ -94,26 +92,6 @@ const AddService = ({ save }) => {
                 }}
               />
             </FloatingLabel>
-            {/* tags entry to array */}
-            <FloatingLabel controlId="inputTags" label="Tags" className="mb-3">
-              <Form.Control
-                type="text"
-                placeholder="comma separated tags"
-                onChange={(e) => {
-                  setTags(e.target.value.split(","));
-                }}
-              />
-            </FloatingLabel>
-
-            <FloatingLabel controlId="inputCost" label="cost" className="mb-3">
-              <Form.Control
-                type="number"
-                placeholder="cost"
-                onChange={(e) => {
-                  setCost(e.target.value);
-                }}
-              />
-            </FloatingLabel>
           </Modal.Body>
         </Form>
         <Modal.Footer>
@@ -128,10 +106,8 @@ const AddService = ({ save }) => {
                 title,
                 deadline,
                 description,
-                tags,
                 terms,
                 category,
-                cost,
               });
               handleClose();
             }}

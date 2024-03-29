@@ -39,8 +39,8 @@ const Service = Record({
   title: text,
   description: text,
   category: text,
-  status: nat64,
-  client: Principal,
+  status: text,
+  user: Principal,
   freelancer: Opt(text),
   cost: nat64,
   terms: text,
@@ -55,7 +55,6 @@ const ServicePayload = Record({
   description: text,
   category: text,
   terms: text,
-  cost: nat64,
   deadline: text,
 });
 
@@ -63,7 +62,6 @@ const ServicePayload = Record({
 const UpdateServicePayload = Record({
   id: text,
   description: text,
-  cost: nat64,
 });
 
 // Structure representing a user
@@ -75,24 +73,9 @@ const User = Record({
   expertise: text,
   bio: text,
   imageUrl: text,
+  skills: Vec(text),
   services: Vec(text),
   portfolios: Vec(text),
-});
-
-const Client = Record({
-  id: text,
-  principal: Principal,
-  services: Vec(text),
-  following: Vec(text),
-});
-
-// bid
-const Bid = Record({
-  id: text,
-  serviceId: text,
-  amount: nat64,
-  description: text,
-  freelancerId: text,
 });
 
 // Payload structure for creating a user
@@ -102,6 +85,7 @@ const UserPayload = Record({
   expertise: text,
   bio: text,
   imageUrl: text,
+  skills: Vec(text),
   portfolios: Vec(text),
 });
 
@@ -124,9 +108,18 @@ export const SubscriptionStatus = Variant({
 export const ReserveSubscription = Record({
   price: nat64,
   status: text,
-  seller: Principal,
+  freelancer: Principal,
   paid_at_block: Opt(nat64),
   memo: nat64,
+});
+
+// bid
+const Bid = Record({
+  id: text,
+  serviceId: text,
+  amount: nat64,
+  description: text,
+  freelancerId: text,
 });
 
 // Variant representing different error types
@@ -137,21 +130,8 @@ const ErrorType = Variant({
   SubscriptionCompleted: text,
 });
 
-// Structure representing a user
-const UserReturn = Record({
-  id: text,
-  principal: Principal,
-  userName: text,
-  email: text,
-  expertise: text,
-  bio: text,
-  portfolios: Vec(text),
-  imageUrl: text,
-  services: Vec(Service),
-});
-
 /**
- * `servicesStorage` - a key-value data structure used to store services by clients.
+ * `servicesStorage` - a key-value data structure used to store services by users.
  * {@link StableBTreeMap} is a self-balancing tree that acts as durable data storage across canister upgrades.
  * For this contract, `StableBTreeMap` is chosen for the following reasons:
  * - `insert`, `get`, and `remove` operations have constant time complexity (O(1)).
@@ -168,7 +148,6 @@ const UserReturn = Record({
  * Values 2 and 3 are not used directly in the constructor but are utilized by the Azle compiler during compile time.
  */
 const servicesStorage = StableBTreeMap(0, text, Service);
-const clientsStorage = StableBTreeMap(1, text, Client);
 const bidsStorage = StableBTreeMap(2, text, Bid);
 const usersStorage = StableBTreeMap(3, text, User);
 const pendingSubscriptions = StableBTreeMap(4, nat64, ReserveSubscription);
@@ -191,44 +170,33 @@ export default Canister({
     (payload) => {
       // Check if the payload is a valid object
       if (typeof payload !== "object" || Object.keys(payload).length === 0) {
-        return Err({ NotFound: "invalid payload" });
+        return Err({ InvalidPayload: "invalid payload" });
       }
       // Create an service with a unique id generated using UUID v4
       const service = {
         id: uuidv4(),
-        client: ic.caller(),
+        status: "pending",
+        user: ic.caller(),
         createdAt: new Date().toISOString(),
-        status: 0n,
-        updatedAt: None,
+        cost: 0n,
         freelancer: None,
+        updatedAt: None,
         ...payload,
       };
 
+      // add service to the user
       // get user with the same principal
       const userOpt = usersStorage.values().filter((user) => {
         return user.principal.toText() === ic.caller().toText();
       });
-      if (userOpt.length === 0) {
-        // create default user
-        const user = {
-          id: uuidv4(),
-          principal: ic.caller(),
-          services: [service.id],
-          email: "johndoe@gmail",
-          userName: "johndoe",
-          expertise: "_",
-        };
-        usersStorage.insert(user.id, user);
-      } else {
-        // add service to the user
 
-        const user = userOpt[0];
-        const updatedUser = {
-          ...user,
-          services: [...user.services, service.id],
-        };
-        usersStorage.insert(user.id, updatedUser);
-      }
+      // add service to the user
+      const user = userOpt[0];
+      const updatedUser = {
+        ...user,
+        services: [...user.services, service.id],
+      };
+      usersStorage.insert(user.id, updatedUser);
 
       // Insert the service into the servicesStorage
       servicesStorage.insert(service.id, service);
@@ -268,18 +236,6 @@ export default Canister({
       return Ok(updatedService);
     }
   ),
-
-  // like service
-  servicestatus: update([text], Result(Service, ErrorType), (serviceId) => {
-    const serviceOpt = servicesStorage.get(serviceId);
-    if ("None" in serviceOpt) {
-      return Err({ NotFound: `service with id=${serviceId} not found` });
-    }
-    const service = serviceOpt.Some;
-    service.status += 1n;
-    servicesStorage.insert(service.id, service);
-    return Ok(service);
-  }),
 
   // Function to add a bid
   addBid: update(
@@ -354,6 +310,7 @@ export default Canister({
     service.freelancer = Some(bid.freelancerId);
     service.cost = bid.amount;
     service.status = "assigned";
+    service.updatedAt = Some(new Date().toISOString());
     servicesStorage.insert(service.id, service);
     return Ok(service);
   }),
@@ -368,7 +325,6 @@ export default Canister({
     const user = {
       id: uuidv4(),
       principal: ic.caller(),
-      followers: 0n,
       services: [],
       ...payload,
     };
@@ -378,37 +334,22 @@ export default Canister({
   }),
 
   // get all users
-  getUsers: query([], Vec(UserReturn), () => {
-    const users = usersStorage.values();
-    return users.map((user) => {
-      const userServices = servicesStorage.values().filter((service) => {
-        return user.services.includes(service.id);
-      });
-      return {
-        ...user,
-        services: userServices,
-      };
-    });
+  getUsers: query([], Vec(User), () => {
+    return usersStorage.values();
   }),
 
   // Function get user by id
-  getUser: query([text], Result(UserReturn, ErrorType), (id) => {
+  getUser: query([text], Result(User, ErrorType), (id) => {
     const userOpt = usersStorage.get(id);
     if ("None" in userOpt) {
       return Err({ NotFound: `user with id=${id} not found` });
     }
     const user = userOpt.Some;
-    const userServices = servicesStorage.values().filter((service) => {
-      return user.services.includes(service.id);
-    });
-    return Ok({
-      ...user,
-      services: userServices,
-    });
+    return Ok(user);
   }),
 
-  // get user by client
-  getUserByClient: query([], Result(User, ErrorType), () => {
+  // get user by owner
+  getUserByOwner: query([], Result(User, ErrorType), () => {
     const principal = ic.caller();
     const userOpt = usersStorage.values().filter((user) => {
       return user.principal.toText() === principal.toText();
@@ -450,56 +391,24 @@ export default Canister({
     }
   ),
 
-  // getClient by principal
-  getClient: query([], Result(Client, ErrorType), () => {
-    const principal = ic.caller();
-    const clientOpt = clientsStorage.values().filter((client) => {
-      return client.principal.toText() === principal.toText();
-    });
-    if (clientOpt.length === 0) {
-      return Err({ NotFound: `client with principal=${principal} not found` });
-    }
-    return Ok(clientOpt[0]);
-  }),
-
-  // bid for task
-
-  // get user users
-  getFollowingUsers: query([], Vec(UserReturn), () => {
-    const clientOpt = clientsStorage.values().filter((client) => {
-      return client.principal.toText() === ic.caller().toText();
-    });
-    if (clientOpt.length === 0) {
-      return [];
-    }
-    const client = clientOpt[0];
-    const users = usersStorage.values().filter((user) => {
-      return client.following.includes(user.id);
-    });
-
-    return users.map((user) => {
-      const userServices = servicesStorage.values().filter((service) => {
-        return user.services.includes(service.id);
-      });
-      return {
-        ...user,
-        services: userServices,
-      };
-    });
-  }),
-
   // get user services
-  getFollowingServices: query([], Vec(Service), () => {
-    const clientOpt = clientsStorage.values().filter((client) => {
-      return client.principal.toText() === ic.caller().toText();
+  getActiveServices: query([], Vec(Service), () => {
+    const userOpt = usersStorage.values().filter((user) => {
+      return user.principal.toText() === ic.caller().toText();
     });
-    if (clientOpt.length === 0) {
+    if (userOpt.length === 0) {
       return [];
     }
-    const client = clientOpt[0];
-    return servicesStorage.values().filter((service) => {
-      return client.services.includes(service.id);
+    const user = userOpt[0];
+
+    const services = servicesStorage.values().filter((service) => {
+      return (
+        service.user.toText() === ic.caller().toText() ||
+        service.freelancer.Some === user.id
+      );
     });
+
+    return services;
   }),
 
   createSubscriptionPay: update(
@@ -516,12 +425,18 @@ export default Canister({
 
       const cost = service.cost;
 
-      const sellerClient = service.client;
+      const freelancerId = service.freelancer.Some;
+      // get freelancer
+      const freelancerUserOpt = usersStorage.values().filter((user) => {
+        return user.id === freelancerId;
+      });
+
+      const freelancerUser = freelancerUserOpt[0].principal;
 
       const reserveSubscription = {
         price: cost,
         status: "pending",
-        seller: sellerClient,
+        freelancer: freelancerUser,
         paid_at_block: None,
         memo: generateCorrelationId(serviceId),
       };
@@ -529,36 +444,10 @@ export default Canister({
       // reduce the available units
       const updatedService = {
         ...service,
-        subscriptions: service.subscriptions + 1n,
+        status: "completed",
       };
 
-      // add service to the client
-      // get client with the same principal
-      const clientOpt = clientsStorage.values().filter((client) => {
-        return client.principal.toText() === ic.caller().toText();
-      });
-
       service.updatedAt = Some(new Date().toISOString());
-
-      if (clientOpt.length === 0) {
-        // create default client
-        const client = {
-          id: uuidv4(),
-          principal: ic.caller(),
-          following: [],
-          services: [service.id],
-        };
-        clientsStorage.insert(client.id, client);
-      } else {
-        // add service to the client
-
-        const client = clientOpt[0];
-        const updatedClient = {
-          ...client,
-          services: [...client.services, service.id],
-        };
-        clientsStorage.insert(client.id, updatedClient);
-      }
 
       servicesStorage.insert(service.id, updatedService);
 

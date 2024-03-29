@@ -21,7 +21,7 @@ const UpdateService = ({ service, save }) => {
         className="btn btn-outline-warning rounded-pill"
         style={{ width: "8rem" }}
       >
-        <i className="bi bi-pencil-square "></i> Update
+        Update
       </button>
       <Modal show={show} onHide={handleClose} centered>
         <Modal.Header closeButton>

@@ -44,16 +44,18 @@ const App = function AppWrapper() {
       {isAuthenticated ? (
         <Container fluid="md">
           <Router>
-            <Nav className="d-flex align-items-center justify-content-end gap-2 pt-3 pb-5">
+            <Nav className="d-flex align-items-center justify-content-between gap-2 pt-3 pb-5">
               <Link
                 to="/?canisterId=br5f7-7uaaa-aaaaa-qaaca-cai"
-                className="text-decoration-none"
+                className=""
+                style={{ fontSize: "1.5rem" }}
               >
                 Services page
               </Link>
               <Link
                 to="/users?canisterId=br5f7-7uaaa-aaaaa-qaaca-cai"
-                className="text-decoration-none"
+                className=""
+                style={{ fontSize: "1.5rem" }}
               >
                 Users page
               </Link>

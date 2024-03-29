@@ -1,20 +1,20 @@
 # Decentralized Freelancer
 
-This canister implements a marketplace for freelance services. Clients can list services, freelancers can bid on those services, and clients can select a freelancer to complete the work.
+This canister implements a marketplace for freelance services. Users can list services, freelancers can bid on those services, and users can select a freelancer to complete the work. Leveraging blockchain technology, a decentralized freelance marketplace can provide a more efficient, transparent, and inclusive environment for connecting users with freelance talent while reducing reliance on intermediaries and improving trust and security in the freelance economy.
 
-**Data Structures**
+## Data Structures
 
 The canister uses several Azle data structures to store information:
 
-* `StableBTreeMap`: This is a self-balancing tree used to store services by client ID, user information, bids, and client information.
+* `StableBTreeMap`: This is a self-balancing tree used to store services by user ID, user information, bids, and user information.
 * `Vec`: This is a vector data structure used to store lists of service IDs, user IDs, and bid IDs within the corresponding data structures.
 * `Option`: This is used to represent optional values, which can be either `Some(value)` or `None`.
 
-**Canister Functions**
+## Canister Functions
 
 The canister provides a variety of functions for managing services, users, bids, and subscriptions:
 
-**Services**
+## Services
 
 * `addService`: Adds a new service for the current user.
 * `getServices`: Retrieves all services listed on the marketplace.
@@ -22,7 +22,7 @@ The canister provides a variety of functions for managing services, users, bids,
 * `updateService`: Updates an existing service.
 * `servicestatus`: Updates the status of a service.
 
-**Bids**
+## Bids
 
 * `addBid`: Allows a user to submit a bid on a service.
 * `getBids`: Retrieves all bids on the marketplace.
@@ -30,41 +30,39 @@ The canister provides a variety of functions for managing services, users, bids,
 * `getBid`: Retrieves a specific bid by its ID.
 * `selectBid`: Assigns a selected bid to a service, marking it complete.
 
-**Users**
+## Users
 
 * `addUser`: Adds a new user to the marketplace.
 * `getUsers`: Retrieves all users registered on the marketplace.
 * `getUser`: Retrieves a specific user by their ID.
-* `getUserByClient`: Retrieves the user information for the currently logged-in client.
+* `getUserByUser`: Retrieves the user information for the currently logged-in user.
 * `getUserServices`: Retrieves all services associated with a specific user.
 * `updateUser`: Updates an existing user's information.
 
-**Clients**
+## Users
 
-* `getClient`: Retrieves the client information for the currently logged-in client.
+* `getUser`: Retrieves the user information for the currently logged-in user.
 
-**Following Users**
+## Following Users
 
-* `getFollowingUsers`: Retrieves a list of users that the current client is following.
-* `getFollowingServices`: Retrieves a list of services from users that the current client is following.
+* `getFollowingUsers`: Retrieves a list of users that the current user is following.
+* `getActiveServices`: Retrieves a list of services from users that the current user is following.
 
-**Subscriptions**
+## Subscriptions
 
 * `createSubscriptionPay`: Reserves a service by paying for it.
 * `completeSubscription`: Completes a subscription by verifying payment.
 * `verifySubscription`: Verifies a subscription payment.
 
-**Helper Functions**
+## Helper Functions
 
 * `getAddressFromPrincipal`: Retrieves the address associated with a principal.
 
-**Additional Notes**
+## Additional Notes
 
 * The code utilizes the `ic` object to interact with the Dfinity network, including calling other canisters and managing timers.
 * The code implements a mechanism to discard pending subscriptions after a certain timeout period.
 * The `uuid` package is used to generate unique IDs for services, users, and bids.
-
-I hope this readme provides a comprehensive overview of the freelance marketplace canister!
 
 ## Things to be explained in the course
 

@@ -35,27 +35,14 @@ export async function getBid(bidId) {
 }
 
 // addBid
-export async function addBid(serviceId, amount) {
+export async function addBid(serviceId, description, amount) {
   return window.canister.serviceManager.addBid(serviceId, description, amount);
 }
 
-// getFollowingUsers
-export async function getFollowingUsers() {
+// getActiveServices
+export async function getActiveServices() {
   try {
-    return await window.canister.serviceManager.getFollowingUsers();
-  } catch (err) {
-    if (err.name === "AgentHTTPResponseError") {
-      const authClient = window.auth.client;
-      await authClient.logout();
-    }
-    return [];
-  }
-}
-
-// getFollowingServices
-export async function getFollowingServices() {
-  try {
-    return await window.canister.serviceManager.getFollowingServices();
+    return await window.canister.serviceManager.getActiveServices();
   } catch (err) {
     if (err.name === "AgentHTTPResponseError") {
       const authClient = window.auth.client;
@@ -84,24 +71,23 @@ export async function getAddressFromPrincipal(principal) {
   );
 }
 
-export async function subscribe(serviceId) {
+export async function payBid(serviceId) {
   const serviceManagerCanister = window.canister.serviceManager;
   const orderResponse = await serviceManagerCanister.createSubscriptionPay(
     serviceId
   );
 
   console.log(orderResponse);
-  const sellerPrincipal = Principal.from(orderResponse.Ok.seller);
-  const sellerAddress = await serviceManagerCanister.getAddressFromPrincipal(
-    sellerPrincipal
-  );
+  const freelancerPrincipal = Principal.from(orderResponse.Ok.freelancer);
+  const freelancerAddress =
+    await serviceManagerCanister.getAddressFromPrincipal(freelancerPrincipal);
   const block = await transferICP(
-    sellerAddress,
+    freelancerAddress,
     orderResponse.Ok.price,
     orderResponse.Ok.memo
   );
   await serviceManagerCanister.completeSubscription(
-    sellerPrincipal,
+    freelancerPrincipal,
     serviceId,
     orderResponse.Ok.price,
     block,

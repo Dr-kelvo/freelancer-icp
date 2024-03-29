@@ -6,7 +6,7 @@ import UpdateService from "./UpdateService";
 import AddBid from "./AddBid";
 import SelectBid from "./SelectBid";
 
-const Service = ({ service, subscribe, update, selectBid, addBid }) => {
+const Service = ({ service, update, selectBid, addBid, payBid }) => {
   const {
     id,
     title,
@@ -15,7 +15,7 @@ const Service = ({ service, subscribe, update, selectBid, addBid }) => {
     createdAt,
     terms,
     updatedAt,
-    client,
+    user,
     freelancer,
     status,
     deadline,
@@ -27,28 +27,36 @@ const Service = ({ service, subscribe, update, selectBid, addBid }) => {
   console.log(service);
 
   const principal = window.auth.principalText;
-  const isClientsService =
-    Principal.from(service.client).toText() === principal;
+  const isUsersService = Principal.from(service.user).toText() === principal;
 
   return (
     <Col key={id}>
       <Card className=" h-100">
         <Card.Header>
           <span className="font-monospace text-secondary">
-            {Principal.from(client).toText()}
+            {Principal.from(user).toText()}
           </span>
-          <div className="d-flex gap-2">
+          <div className="d-flex align-items-center gap-2">
             <Badge bg="secondary" className="ms-auto">
-              Fee: {intCost} ICP
+              Cost: {intCost} ICP
             </Badge>
             <Badge bg="secondary" className="ms-auto">
-              Status: {status}
+              {status}
             </Badge>
-
-            {isClientsService ? (
+            {isUsersService ? (
               <>
                 <UpdateService service={service} save={update} />
-                <SelectBid service={service} save={selectBid} />
+                {freelancer.length > 0 ? (
+                  <Button
+                    onClick={() => {
+                      payBid(id);
+                    }}
+                  >
+                    PayOut
+                  </Button>
+                ) : (
+                  <SelectBid service={service} save={selectBid} />
+                )}
               </>
             ) : (
               <AddBid serviceId={id} save={addBid} />
@@ -72,16 +80,6 @@ const Service = ({ service, subscribe, update, selectBid, addBid }) => {
           )}
           <Card.Text className="flex-grow-1">updatedAt: {updatedAt}</Card.Text>
           <Card.Text className="flex-grow-1">Id: {id}</Card.Text>
-
-          <Button
-            onClick={() => {
-              subscribe(service.id);
-            }}
-            variant="outline-dark"
-            className="w-100 py-3"
-          >
-            Subscribe to Service
-          </Button>
         </Card.Body>
       </Card>
     </Col>

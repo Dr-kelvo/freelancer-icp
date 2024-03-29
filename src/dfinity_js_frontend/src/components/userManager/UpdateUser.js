@@ -20,9 +20,9 @@ const UpdateUser = ({ user, save }) => {
       <button
         onClick={handleShow}
         className="btn btn-outline-warning rounded-pill"
-        style={{ width: "8rem" }}
+        style={{ width: "11rem" }}
       >
-        <i className="bi bi-pencil-square "></i> Update
+        <i className="bi bi-pencil-square "></i> Update Profile
       </button>
       <Modal show={show} onHide={handleClose} centered>
         <Modal.Header closeButton>

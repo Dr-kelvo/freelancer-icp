@@ -10,9 +10,9 @@ export async function followUser(userId) {
   return window.canister.serviceManager.followUser(userId);
 }
 
-export async function getUserByClient() {
+export async function getUserByOwner() {
   try {
-    return await window.canister.serviceManager.getUserByClient();
+    return await window.canister.serviceManager.getUserByOwner();
   } catch (err) {
     if (err.name === "AgentHTTPResponseError") {
       const authClient = window.auth.client;

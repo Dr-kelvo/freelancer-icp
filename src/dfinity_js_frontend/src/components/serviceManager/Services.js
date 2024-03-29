@@ -8,17 +8,19 @@ import { NotificationSuccess, NotificationError } from "../utils/Notifications";
 import {
   getServices as getServiceList,
   createService,
-  subscribe,
+  payBid,
   updateService,
-  getFollowingServices,
-  servicestatus,
+  getActiveServices,
   selectBid,
   addBid,
 } from "../../utils/serviceManager";
 import AddService from "./AddService";
+import { createUser, getUserByOwner } from "../../utils/userManager";
+import AddUser from "../userManager/AddUser";
 
 const Services = () => {
   const [services, setServices] = useState([]);
+  const [user, setUser] = useState({});
   const [loading, setLoading] = useState(false);
 
   // function to get the list of services
@@ -34,12 +36,26 @@ const Services = () => {
     }
   });
 
-  // function to get client  service
+  // function to get user  service
   const getUserServices = useCallback(async () => {
     try {
       console.log("geter");
       setLoading(true);
-      setServices(await getFollowingServices());
+      setServices(await getActiveServices());
+    } catch (error) {
+      console.log({ error });
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  // function to get the list of users
+  const getUserOwner = useCallback(async () => {
+    try {
+      setLoading(true);
+      getUserByOwner().then((resp) => {
+        setUser(resp.Ok);
+      });
     } catch (error) {
       console.log({ error });
     } finally {
@@ -51,8 +67,6 @@ const Services = () => {
     console.log("adder");
     try {
       setLoading(true);
-      data.availableUnits = parseInt(data.availableUnits, 10);
-      data.cost = parseInt(data.cost, 10) * 10 ** 8;
       createService(data).then((resp) => {
         getServices();
         toast(<NotificationSuccess text="Service added successfully." />);
@@ -65,22 +79,23 @@ const Services = () => {
     }
   };
 
-  //  function to subscribe book
-  const subscribeFunc = async (service) => {
+  //  function to payBid book
+  const payBidFunc = async (serviceId) => {
     try {
       setLoading(true);
-      subscribe(service).then((resp) => {
+      payBid(serviceId).then((resp) => {
         getServices();
         toast(
-          <NotificationSuccess text="Service subscribe successfull, check users tab for your services" />
+          <NotificationSuccess text="Service payBid successfull, refresh to see new balance" />
         );
       });
     } catch (error) {
       console.log(
-        "failed to subscribe service, check that you have enough ICP tokens"
+        "failed to payBid service, check that you have enough ICP tokens"
       );
+      console.log(error);
       toast(
-        <NotificationError text="Failed to subscribe service. plese check that you have enough ICP tokens" />
+        <NotificationError text="Failed to payBid service. plese check that you have enough ICP tokens" />
       );
     } finally {
       setLoading(false);
@@ -91,8 +106,8 @@ const Services = () => {
   const newBid = async (serviceId, description, amount) => {
     try {
       setLoading(true);
-      amount = parseInt(amount, 10) * 10 ** 8;
-      addBid(serviceId, description, amount).then((resp) => {
+      const amountInt = parseInt(amount, 10) * 10 ** 8;
+      addBid(serviceId, description, amountInt).then((resp) => {
         getServices();
         toast(<NotificationSuccess text="Bid added successfully." />);
       });
@@ -136,42 +151,64 @@ const Services = () => {
     }
   };
 
+  const addUser = async (data) => {
+    try {
+      setLoading(true);
+      createUser(data).then((resp) => {
+        getUserOwner();
+      });
+      toast(<NotificationSuccess text="User added successfully." />);
+    } catch (error) {
+      console.log({ error });
+      toast(<NotificationError text="Failed to create a user." />);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   console.log(services);
 
   useEffect(() => {
     getServices();
+    getUserOwner();
   }, []);
+
+  console.log(user);
 
   return (
     <>
       {!loading ? (
-        <>
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="fs-4 fw-bold mb-0">Services</h1>
-            {/* get user subscribed service */}
-            <Button
-              onClick={getUserServices}
-              className="btn btn-primary-outline text"
-            >
-              current Services
-            </Button>
-            <AddService save={addService} />
+        !user?.userName ? (
+          <AddUser save={addUser} />
+        ) : (
+          <div>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h1 className="fs-4 fw-bold mb-0">Services</h1>
+              {/* get user payBidd service */}
+              <Button
+                onClick={getUserServices}
+                className="btn btn-primary-outline text"
+              >
+                active Services
+              </Button>
+              <AddService save={addService} />
+            </div>
+            <Row xs={1} sm={2} lg={3} className="g-3  mb-5 g-xl-4 g-xxl-5">
+              {services.map((_service, index) => (
+                <Service
+                  key={index}
+                  service={{
+                    ..._service,
+                  }}
+                  update={update}
+                  selectBid={bidSelect}
+                  addBid={newBid}
+                  payBid={payBidFunc}
+                />
+              ))}
+            </Row>
           </div>
-          <Row xs={1} sm={2} lg={3} className="g-3  mb-5 g-xl-4 g-xxl-5">
-            {services.map((_service, index) => (
-              <Service
-                key={index}
-                service={{
-                  ..._service,
-                }}
-                subscribe={subscribeFunc}
-                update={update}
-                selectBid={bidSelect}
-                addBid={newBid}
-              />
-            ))}
-          </Row>
-        </>
+        )
       ) : (
         <Loader />
       )}

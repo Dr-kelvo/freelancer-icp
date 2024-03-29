@@ -6,8 +6,7 @@ const AddBid = ({ serviceId, save }) => {
   const [amount, setAmount] = useState([]);
   const [description, setDescription] = useState("");
 
-  const isFormFilled = () =>
-    bidName && expertise && email && bio && imageUrl && amount;
+  const isFormFilled = () => description && amount;
 
   const [show, setShow] = useState(false);
 
@@ -16,8 +15,11 @@ const AddBid = ({ serviceId, save }) => {
 
   return (
     <>
-      <Button onClick={handleShow} className="btn btn-success-outline">
-        <i className="bi bi-plus "></i> New Bid
+      <Button
+        onClick={handleShow}
+        className="btn btn-outline-success text-white"
+      >
+        <i className="bi bi-plus "></i> Bid
       </Button>
       <Modal show={show} onHide={handleClose} centered>
         <Modal.Header closeButton>
@@ -61,11 +63,7 @@ const AddBid = ({ serviceId, save }) => {
             variant="dark"
             disabled={!isFormFilled()}
             onClick={() => {
-              save({
-                serviceId,
-                description,
-                amount,
-              });
+              save(serviceId, description, amount);
               handleClose();
             }}
           >
